@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Star } from 'lucide-react';
-import { apiFetch } from '@/services/api';
+import { Star, RefreshCw } from 'lucide-react';
+import { api } from '@/services/api';
 
 interface ReviewItem {
   id: string;
@@ -34,26 +34,33 @@ export default function ReviewsPage() {
   const [submittingReply, setSubmittingReply] = useState(false);
 
   useEffect(() => {
-    fetchReviews();
+    fetchReviews(false);
+    const interval = setInterval(() => {
+      fetchReviews(true);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchReviews = async () => {
-    setLoading(true);
+  const fetchReviews = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
-      const data = await apiFetch('/reviews/owner');
+      const response = await api.get('/reviews/owner');
+      const data = response.data;
       if (data && data.reviews) {
         setReviews(data.reviews);
         if (data.summary) {
           setStats(data.summary);
         }
-      } else {
+      } else if (!isBackground) {
         useMockData();
       }
     } catch (err) {
-      console.warn('Using fallback mock reviews:', err);
-      useMockData();
+      if (!isBackground) {
+        console.warn('Using fallback mock reviews:', err);
+        useMockData();
+      }
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
@@ -65,7 +72,7 @@ export default function ReviewsPage() {
     });
     setReviews([
       {
-        id: 'rev-1',
+        id: 'demo-rev-1',
         initials: 'LM',
         authorName: 'Laura M.',
         businessName: 'Mirissa Ocean Homestay',
@@ -74,7 +81,7 @@ export default function ReviewsPage() {
         reply: null,
       },
       {
-        id: 'rev-2',
+        id: 'demo-rev-2',
         initials: 'JS',
         authorName: 'James Smith',
         businessName: 'Cinnamon Citadel Kandy',
@@ -90,10 +97,7 @@ export default function ReviewsPage() {
     setSubmittingReply(true);
 
     try {
-      await apiFetch(`/reviews/${reviewId}/reply`, {
-        method: 'POST',
-        body: JSON.stringify({ reply: replyText }),
-      });
+      await api.post(`/reviews/${reviewId}/reply`, { reply: replyText });
 
       // Update local state
       setReviews((prev) =>
@@ -123,6 +127,7 @@ export default function ReviewsPage() {
       setReplyText('');
     } finally {
       setSubmittingReply(false);
+      fetchReviews(true);
     }
   };
 

@@ -39,3 +39,15 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const apiFetch = async (url: string, options: any = {}) => {
+  const method = options.method || 'GET';
+  const data = options.body ? JSON.parse(options.body) : undefined;
+  const res = await api.request({
+    url,
+    method,
+    data,
+  });
+  return res.data;
+};
+
