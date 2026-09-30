@@ -205,11 +205,22 @@ export default function ReviewsPage() {
 
               {/* Owner Reply Box or Reply Action */}
               <div className="pl-0 md:pl-[52px]">
-                {rev.reply ? (
-                  /* Existing Inset Host Reply Container matching Mockup 1 */
-                  <div className="bg-[#181818] border-l-2 border-blue-500 rounded-xl p-4 space-y-1.5 shadow-inner">
-                    <p className="text-xs font-bold text-blue-400">Your reply</p>
-                    <p className="text-xs text-slate-300 leading-relaxed">{rev.reply}</p>
+                {rev.reply && activeReplyId !== rev.id ? (
+                  /* Existing Inset Host Reply Container with Edit Button */
+                  <div className="bg-[#181818] border-l-2 border-blue-500 rounded-xl p-4 space-y-1.5 shadow-inner flex justify-between items-start">
+                    <div className="space-y-1 flex-1 pr-4">
+                      <p className="text-xs font-bold text-blue-400">Your reply</p>
+                      <p className="text-xs text-slate-300 leading-relaxed">{rev.reply}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setActiveReplyId(rev.id);
+                        setReplyText(rev.reply || '');
+                      }}
+                      className="px-2.5 py-1 bg-[#222222] hover:bg-[#333333] text-slate-300 hover:text-white text-[11px] font-semibold rounded-lg border border-[#333333] transition cursor-pointer"
+                    >
+                      Edit
+                    </button>
                   </div>
                 ) : activeReplyId === rev.id ? (
                   /* Reply Input Box */
