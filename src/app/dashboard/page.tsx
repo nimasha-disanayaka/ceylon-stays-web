@@ -20,6 +20,10 @@ export default function DashboardOverviewPage() {
       } catch (e) {}
     }
     fetchBookings();
+    const interval = setInterval(() => {
+      fetchBookings();
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchBookings = async () => {

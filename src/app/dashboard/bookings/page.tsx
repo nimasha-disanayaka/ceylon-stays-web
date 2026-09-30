@@ -11,11 +11,14 @@ export default function BookingsPage() {
 
   useEffect(() => {
     fetchBookings();
+    const interval = setInterval(() => {
+      fetchBookings();
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchBookings = async () => {
     try {
-      setLoading(true);
       const response = await api.get('/bookings/owner-bookings');
       setBookings(response.data.bookings || []);
     } catch (err) {
