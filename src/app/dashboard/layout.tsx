@@ -52,7 +52,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Bookings', href: '/dashboard/bookings', icon: CalendarCheck },
     { name: 'Properties', href: '/dashboard/businesses', icon: Building2 },
-    { name: 'Room Listings', href: '/dashboard/listings', icon: BedDouble },
     { name: 'Reviews', href: '/dashboard/reviews', icon: Star },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];

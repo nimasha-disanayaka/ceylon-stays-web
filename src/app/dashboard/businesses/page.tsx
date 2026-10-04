@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Store, Plus, MapPin, AlertCircle, X, Check, Trash2, Pencil } from 'lucide-react';
+import { Store, Plus, MapPin, AlertCircle, X, Check, Trash2, Pencil, BedDouble, Users, Tag, DollarSign } from 'lucide-react';
 import { api } from '@/services/api';
 import { useBusinesses } from '@/context/BusinessContext';
 
@@ -10,6 +10,9 @@ export default function BusinessesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<any | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [viewListingsBiz, setViewListingsBiz] = useState<any | null>(null);
+  const [showAddRoomModal, setShowAddRoomModal] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -21,6 +24,14 @@ export default function BusinessesPage() {
     address: '',
     latitude: 5.9483,
     longitude: 80.4716,
+  });
+
+  const [roomFormData, setRoomFormData] = useState({
+    name: '',
+    description: '',
+    pricePerNight: 85.0,
+    maxGuests: 2,
+    amenitiesString: 'WiFi, AC, Sea View',
   });
 
   const confirmDeleteProperty = async () => {
@@ -100,6 +111,52 @@ export default function BusinessesPage() {
     }
   };
 
+  const handleCreateRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!viewListingsBiz) return;
+    setError('');
+    setSubmitting(true);
+
+    try {
+      const amenities = roomFormData.amenitiesString
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const res = await api.post('/listings', {
+        businessId: viewListingsBiz.id,
+        name: roomFormData.name,
+        description: roomFormData.description,
+        pricePerNight: Number(roomFormData.pricePerNight),
+        maxGuests: Number(roomFormData.maxGuests),
+        amenities,
+      });
+
+      const newListing = res.data.listing;
+      
+      // Update local state
+      setViewListingsBiz((prev: any) => ({
+        ...prev,
+        listings: [newListing, ...(prev.listings || [])],
+      }));
+
+      setShowAddRoomModal(false);
+      setRoomFormData({
+        name: '',
+        description: '',
+        pricePerNight: 85.0,
+        maxGuests: 2,
+        amenitiesString: 'WiFi, AC, Sea View',
+      });
+      await fetchBusinesses(false);
+    } catch (err: any) {
+      console.error('Add room error:', err);
+      setError(err.response?.data?.error || 'Failed to add room listing.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleUpdateBusiness = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingBusiness) return;
@@ -157,7 +214,7 @@ export default function BusinessesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800/60">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">My Properties</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage hotels, homestays, and restaurants</p>
+          <p className="text-sm text-slate-400 mt-1">Manage hotels, homestays, and room listings</p>
         </div>
 
         <button
@@ -214,10 +271,17 @@ export default function BusinessesPage() {
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     {biz.type}
                   </span>
-                  <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                  
+                  {/* Clickable Listings Badge */}
+                  <button
+                    onClick={() => setViewListingsBiz(biz)}
+                    className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/20 transition flex items-center gap-1.5 cursor-pointer"
+                    title="Click to view room listings for this property"
+                  >
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    {biz.listings?.length || 0} Listings
-                  </span>
+                    <span>{biz.listings?.length || 0} Listings</span>
+                    <BedDouble className="w-3.5 h-3.5 ml-0.5" />
+                  </button>
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-2">{biz.name}</h3>
@@ -230,7 +294,14 @@ export default function BusinessesPage() {
               </div>
 
               <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                <span className="text-slate-500 font-mono">ID: {biz.id.slice(0, 8)}...</span>
+                <button
+                  onClick={() => setViewListingsBiz(biz)}
+                  className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5"
+                >
+                  <BedDouble className="w-3.5 h-3.5" />
+                  <span>View Rooms ({biz.listings?.length || 0})</span>
+                </button>
+
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => {
@@ -258,10 +329,6 @@ export default function BusinessesPage() {
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
-                  <span className="text-emerald-400 font-semibold flex items-center space-x-1 ml-1">
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Active</span>
-                  </span>
                 </div>
               </div>
             </div>
@@ -269,7 +336,215 @@ export default function BusinessesPage() {
         </div>
       )}
 
-      {/* Custom Delete Confirmation Modal */}
+      {/* View Property Listings Modal */}
+      {viewListingsBiz && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel w-full max-w-3xl max-h-[85vh] p-6 md:p-8 rounded-3xl shadow-2xl relative border border-slate-700/80 flex flex-col">
+            <button
+              onClick={() => setViewListingsBiz(null)}
+              className="absolute top-6 right-6 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center justify-between pb-6 border-b border-slate-800">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    {viewListingsBiz.type}
+                  </span>
+                  <h2 className="text-2xl font-bold text-white">{viewListingsBiz.name}</h2>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">Room & Suite Listings for this property</p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setError('');
+                  setShowAddRoomModal(true);
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-emerald-600/20 flex items-center space-x-1.5 mr-10"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Room Listing</span>
+              </button>
+            </div>
+
+            {/* Listings Grid inside Modal */}
+            <div className="flex-1 overflow-y-auto py-6 space-y-4">
+              {(!viewListingsBiz.listings || viewListingsBiz.listings.length === 0) ? (
+                <div className="p-8 text-center bg-slate-900/50 rounded-2xl border border-slate-800">
+                  <BedDouble className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                  <p className="text-white font-semibold text-sm">No Room Listings Yet</p>
+                  <p className="text-xs text-slate-400 mt-1 mb-4">Add rooms, suites, or dining items for this property.</p>
+                  <button
+                    onClick={() => {
+                      setError('');
+                      setShowAddRoomModal(true);
+                    }}
+                    className="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-semibold rounded-xl transition"
+                  >
+                    + Add First Room Listing
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {viewListingsBiz.listings.map((room: any) => (
+                    <div key={room.id} className="p-5 bg-slate-900/80 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-lg font-bold text-white">{room.name}</h4>
+                          <span className="text-base font-extrabold text-emerald-400 font-mono">${room.pricePerNight}<span className="text-xs text-slate-400 font-normal">/night</span></span>
+                        </div>
+                        <p className="text-xs text-slate-400 mb-3">{room.description || 'No detailed description.'}</p>
+                        
+                        <div className="flex items-center space-x-4 text-xs text-slate-300 mb-3">
+                          <span className="flex items-center space-x-1">
+                            <Users className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Up to {room.maxGuests} guests</span>
+                          </span>
+                        </div>
+
+                        {room.amenities && room.amenities.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {room.amenities.map((a: string, idx: number) => (
+                              <span key={idx} className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700">
+                                {a}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                        <span>ID: {room.id.slice(0, 8)}...</span>
+                        <span className="text-emerald-400 font-semibold flex items-center space-x-1">
+                          <Check className="w-3 h-3" />
+                          <span>Active</span>
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Room Modal */}
+      {showAddRoomModal && viewListingsBiz && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel w-full max-w-md p-6 md:p-8 rounded-3xl shadow-2xl relative border border-slate-700/80">
+            <button
+              onClick={() => setShowAddRoomModal(false)}
+              className="absolute top-6 right-6 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h2 className="text-xl font-bold text-white mb-1">Add Room Listing</h2>
+            <p className="text-xs text-slate-400 mb-6">Create room for <span className="text-emerald-400 font-semibold">{viewListingsBiz.name}</span></p>
+
+            {error && (
+              <div className="mb-4 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateRoom} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Room Listing Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={roomFormData.name}
+                  onChange={(e) => setRoomFormData({ ...roomFormData, name: e.target.value })}
+                  placeholder="e.g. Deluxe Ocean View Suite"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={roomFormData.description}
+                  onChange={(e) => setRoomFormData({ ...roomFormData, description: e.target.value })}
+                  placeholder="Room highlights, bed type, view..."
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Price per Night ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    required
+                    value={roomFormData.pricePerNight}
+                    onChange={(e) => setRoomFormData({ ...roomFormData, pricePerNight: parseFloat(e.target.value) })}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                    Max Guests
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={roomFormData.maxGuests}
+                    onChange={(e) => setRoomFormData({ ...roomFormData, maxGuests: parseInt(e.target.value, 10) })}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  Amenities (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={roomFormData.amenitiesString}
+                  onChange={(e) => setRoomFormData({ ...roomFormData, amenitiesString: e.target.value })}
+                  placeholder="WiFi, AC, Sea View, Balcony"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div className="pt-4 flex items-center justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddRoomModal(false)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-emerald-600/20 disabled:opacity-50 active:scale-95"
+                >
+                  {submitting ? 'Creating...' : 'Save Room Listing'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Property Modal */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="glass-panel w-full max-w-md p-6 rounded-3xl shadow-2xl relative border border-red-500/30">
