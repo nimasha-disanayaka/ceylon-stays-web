@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard,
   CalendarCheck,
+  Building2,
   BedDouble,
   Star,
   Settings,
@@ -50,7 +51,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems = [
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Bookings', href: '/dashboard/bookings', icon: CalendarCheck },
-    { name: 'Listings', href: '/dashboard/businesses', icon: BedDouble },
+    { name: 'Properties', href: '/dashboard/businesses', icon: Building2 },
+    { name: 'Room Listings', href: '/dashboard/listings', icon: BedDouble },
     { name: 'Reviews', href: '/dashboard/reviews', icon: Star },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
