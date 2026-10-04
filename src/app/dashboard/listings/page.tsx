@@ -29,20 +29,24 @@ export default function ListingsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      const res = await api.get('/listings/search');
+      const searchListings = res.data.listings || [];
+
+      const mappedListings = searchListings.map((l: any) => ({
+        ...l,
+        businessName: l.business?.name || 'Property',
+      }));
+
+      setListings(mappedListings);
+
       if (businesses.length > 0) {
         setFormData((prev) => ({
           ...prev,
           businessId: prev.businessId || businesses[0].id,
         }));
-        const allListings = businesses.flatMap((b: any) =>
-          (b.listings || []).map((l: any) => ({ ...l, businessName: b.name }))
-        );
-        setListings(allListings);
-      } else {
-        setListings([]);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching listings:', err);
     } finally {
       setLoading(false);
     }
