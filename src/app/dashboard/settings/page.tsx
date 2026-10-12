@@ -17,12 +17,19 @@ import {
   Download,
   KeyRound,
   ExternalLink,
+  Smartphone,
+  Send,
+  MessageSquare,
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ImageUpload';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'payouts' | 'notifications' | 'security'>('profile');
   const [loading, setLoading] = useState(false);
+  const [testPhone, setTestPhone] = useState('+94 77 123 4567');
+  const [testChannel, setTestChannel] = useState<'SMS' | 'WHATSAPP'>('SMS');
+  const [sendingSms, setSendingSms] = useState(false);
+  const [smsResult, setSmsResult] = useState<any>(null);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Profile Form State
@@ -204,6 +211,38 @@ export default function SettingsPage() {
       showNotification('error', 'Could not reach server to change password.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Test SMS / WhatsApp Dispatch
+  const handleSendTestSMS = async () => {
+    setSendingSms(true);
+    setSmsResult(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/notifications/test-sms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          phone: testPhone || profile.phone,
+          channel: testChannel,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSmsResult(data.delivery);
+        showNotification('success', `Test ${testChannel} notification delivered to ${testPhone || profile.phone}!`);
+      } else {
+        showNotification('error', data.error || 'Failed to dispatch test notification');
+      }
+    } catch (e) {
+      showNotification('error', 'Could not reach backend notification service');
+    } finally {
+      setSendingSms(false);
     }
   };
 
@@ -560,7 +599,84 @@ export default function SettingsPage() {
             ))}
           </div>
 
-          <div className="flex justify-end pt-4">
+          {/* Live SMS & WhatsApp Test Dispatcher */}
+          <div className="pt-6 border-t border-[#262626] space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Smartphone className="w-5 h-5 text-emerald-400" />
+                  Live SMS & WhatsApp Gateway Verification
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Send a live test ping to ensure your phone number receives instant guest booking alerts.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 p-1 bg-[#121212] rounded-lg border border-[#2a2a2a]">
+                <button
+                  type="button"
+                  onClick={() => setTestChannel('SMS')}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                    testChannel === 'SMS'
+                      ? 'bg-emerald-600 text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  SMS
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTestChannel('WHATSAPP')}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                    testChannel === 'WHATSAPP'
+                      ? 'bg-emerald-600 text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  WhatsApp
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <div className="relative w-full sm:flex-1">
+                <Phone className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
+                <input
+                  type="tel"
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                  placeholder="+94 77 123 4567"
+                  className="w-full bg-[#121212] border border-[#2a2a2a] rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleSendTestSMS}
+                disabled={sendingSms}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-sm font-semibold transition-all disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+                {sendingSms ? 'Sending Alert...' : `Send Test ${testChannel}`}
+              </button>
+            </div>
+
+            {/* Delivered Message Simulator Preview */}
+            {smsResult && (
+              <div className="p-4 rounded-xl bg-[#121212] border border-emerald-500/30 space-y-2 animate-in fade-in">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Delivered via {smsResult.provider}
+                  </span>
+                  <span>{new Date(smsResult.timestamp).toLocaleTimeString()}</span>
+                </div>
+                <div className="p-3 rounded-lg bg-[#181818] border border-[#262626] font-mono text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">
+                  {smsResult.message}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-[#262626]">
             <button
               onClick={handleSaveNotifications}
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-950/40"
