@@ -34,6 +34,73 @@ export default function BusinessesPage() {
     amenitiesString: 'WiFi, AC, Sea View',
   });
 
+  // Blocked Dates State
+  const [blockDatesRoom, setBlockDatesRoom] = useState<any | null>(null);
+  const [roomBlockedDates, setRoomBlockedDates] = useState<any[]>([]);
+  const [loadingBlockedDates, setLoadingBlockedDates] = useState(false);
+  const [blockStartDate, setBlockStartDate] = useState('');
+  const [blockEndDate, setBlockEndDate] = useState('');
+  const [blockReason, setBlockReason] = useState('Room maintenance & repairs');
+  const [submittingBlock, setSubmittingBlock] = useState(false);
+
+  const handleOpenBlockDatesModal = (room: any) => {
+    setBlockDatesRoom(room);
+    setBlockStartDate('');
+    setBlockEndDate('');
+    setBlockReason('Room maintenance & repairs');
+    setError('');
+    setSuccessMsg('');
+    fetchRoomBlockedDates(room.id);
+  };
+
+  const fetchRoomBlockedDates = async (roomId: string) => {
+    try {
+      setLoadingBlockedDates(true);
+      const res = await api.get(`/listings/${roomId}/blocked-dates`);
+      if (res.data && res.data.blockedDates) {
+        setRoomBlockedDates(res.data.blockedDates);
+      }
+    } catch (err) {
+      console.warn('Error fetching room blocked dates:', err);
+    } finally {
+      setLoadingBlockedDates(false);
+    }
+  };
+
+  const handleCreateBlockDates = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!blockDatesRoom || !blockStartDate || !blockEndDate) return;
+    setError('');
+    setSuccessMsg('');
+    try {
+      setSubmittingBlock(true);
+      await api.post(`/listings/${blockDatesRoom.id}/blocked-dates`, {
+        startDate: blockStartDate,
+        endDate: blockEndDate,
+        reason: blockReason,
+      });
+      setSuccessMsg('Date range blocked successfully!');
+      setBlockStartDate('');
+      setBlockEndDate('');
+      fetchRoomBlockedDates(blockDatesRoom.id);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to block dates');
+    } finally {
+      setSubmittingBlock(false);
+    }
+  };
+
+  const handleDeleteBlockedDate = async (blockId: string) => {
+    if (!blockDatesRoom) return;
+    try {
+      await api.delete(`/listings/${blockDatesRoom.id}/blocked-dates/${blockId}`);
+      setSuccessMsg('Blocked date range removed.');
+      fetchRoomBlockedDates(blockDatesRoom.id);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to remove blocked dates');
+    }
+  };
+
   const confirmDeleteProperty = async () => {
     if (!deleteTarget) return;
     setSubmitting(true);
@@ -417,7 +484,12 @@ export default function BusinessesPage() {
                       </div>
 
                       <div className="pt-3 mt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                        <span>ID: {room.id.slice(0, 8)}...</span>
+                        <button
+                          onClick={() => handleOpenBlockDatesModal(room)}
+                          className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 text-xs font-semibold rounded-lg transition flex items-center space-x-1"
+                        >
+                          <span>🔒 Block Dates</span>
+                        </button>
                         <span className="text-emerald-400 font-semibold flex items-center space-x-1">
                           <Check className="w-3 h-3" />
                           <span>Active</span>
@@ -834,6 +906,142 @@ export default function BusinessesPage() {
                   className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-emerald-600/20 disabled:opacity-50 active:scale-95"
                 >
                   {submitting ? 'Creating...' : 'Create Property'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Block Dates & Maintenance Modal */}
+      {blockDatesRoom && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel w-full max-w-lg p-6 md:p-8 rounded-3xl shadow-2xl relative border border-slate-700/80 max-h-[90vh] flex flex-col">
+            <button
+              onClick={() => setBlockDatesRoom(null)}
+              className="absolute top-6 right-6 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center space-x-2 mb-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                Maintenance & Blockouts
+              </span>
+            </div>
+            <h2 className="text-xl font-bold text-white mb-1">Manage Blocked Dates</h2>
+            <p className="text-xs text-slate-400 mb-4">
+              Room: <span className="text-emerald-400 font-semibold">{blockDatesRoom.name}</span>
+            </p>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {successMsg && (
+              <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs flex items-center space-x-2">
+                <Check className="w-4 h-4 shrink-0" />
+                <span>{successMsg}</span>
+              </div>
+            )}
+
+            {/* Existing Blocked Dates */}
+            <div className="mb-4 flex-1 overflow-y-auto pr-1">
+              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                Currently Blocked Ranges
+              </h4>
+
+              {loadingBlockedDates ? (
+                <div className="p-4 text-center text-xs text-slate-400">Loading blocked dates...</div>
+              ) : roomBlockedDates.length === 0 ? (
+                <div className="p-4 text-center bg-slate-900/50 rounded-xl border border-slate-800 text-xs text-slate-400">
+                  ✨ No dates currently blocked for this room.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {roomBlockedDates.map((block: any) => (
+                    <div
+                      key={block.id}
+                      className="p-3 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-bold text-amber-400 font-mono">
+                            🔒 {new Date(block.startDate).toISOString().split('T')[0]} → {new Date(block.endDate).toISOString().split('T')[0]}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{block.reason || 'Maintenance'}</p>
+                      </div>
+
+                      <button
+                        onClick={() => handleDeleteBlockedDate(block.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                        title="Remove block"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add New Blocked Range Form */}
+            <form onSubmit={handleCreateBlockDates} className="pt-4 border-t border-slate-800 space-y-3">
+              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                + Block New Date Range
+              </h4>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={blockStartDate}
+                    onChange={(e) => setBlockStartDate(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-emerald-500 transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={blockEndDate}
+                    onChange={(e) => setBlockEndDate(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-emerald-500 transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 mb-1">Reason / Note</label>
+                <input
+                  type="text"
+                  placeholder="e.g. AC maintenance, Deep cleaning, Private booking"
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setBlockDatesRoom(null)}
+                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingBlock}
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-amber-600/20 disabled:opacity-50"
+                >
+                  {submittingBlock ? 'Saving...' : '🔒 Block Dates'}
                 </button>
               </div>
             </form>
