@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Store, Plus, MapPin, AlertCircle, X, Check, Trash2, Pencil, BedDouble, Users, Tag, DollarSign } from 'lucide-react';
 import { api } from '@/services/api';
 import { useBusinesses } from '@/context/BusinessContext';
+import { ImageUpload } from '@/components/ImageUpload';
 
 export default function BusinessesPage() {
   const { businesses, loading, fetchBusinesses, addBusinessLocally, updateBusiness, deleteBusiness } = useBusinesses();
@@ -24,6 +25,7 @@ export default function BusinessesPage() {
     address: '',
     latitude: 5.9483,
     longitude: 80.4716,
+    photoUrl: '',
   });
 
   const [roomFormData, setRoomFormData] = useState({
@@ -32,6 +34,7 @@ export default function BusinessesPage() {
     pricePerNight: 85.0,
     maxGuests: 2,
     amenitiesString: 'WiFi, AC, Sea View',
+    photoUrl: '',
   });
 
   // Blocked Dates State
@@ -137,6 +140,7 @@ export default function BusinessesPage() {
         address: formData.address.trim(),
         latitude: isNaN(Number(formData.latitude)) ? 5.9483 : Number(formData.latitude),
         longitude: isNaN(Number(formData.longitude)) ? 80.4716 : Number(formData.longitude),
+        imageUrls: formData.photoUrl ? [formData.photoUrl] : undefined,
       };
 
       const res = await api.post('/businesses', payload);
@@ -155,6 +159,7 @@ export default function BusinessesPage() {
           address: '',
           latitude: 5.9483,
           longitude: 80.4716,
+          photoUrl: '',
         });
         await fetchBusinesses(false);
       }
@@ -214,6 +219,7 @@ export default function BusinessesPage() {
         pricePerNight: 85.0,
         maxGuests: 2,
         amenitiesString: 'WiFi, AC, Sea View',
+        photoUrl: '',
       });
       await fetchBusinesses(false);
     } catch (err: any) {
@@ -595,6 +601,12 @@ export default function BusinessesPage() {
                 />
               </div>
 
+              <ImageUpload
+                value={roomFormData.photoUrl}
+                onChange={(url) => setRoomFormData({ ...roomFormData, photoUrl: url })}
+                label="Room Photo"
+              />
+
               <div className="pt-4 flex items-center justify-end space-x-3">
                 <button
                   type="button"
@@ -850,6 +862,12 @@ export default function BusinessesPage() {
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition"
                 />
               </div>
+
+              <ImageUpload
+                value={formData.photoUrl}
+                onChange={(url) => setFormData({ ...formData, photoUrl: url })}
+                label="Property Cover Photo"
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
