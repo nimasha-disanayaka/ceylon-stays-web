@@ -29,12 +29,13 @@ export default function ListingsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/listings/search');
-      const searchListings = res.data.listings || [];
+      // Fetch only listings belonging to the authenticated host's properties
+      const res = await api.get('/listings/my-listings');
+      const myListings = res.data.listings || [];
 
-      const mappedListings = searchListings.map((l: any) => ({
+      const mappedListings = myListings.map((l: any) => ({
         ...l,
-        businessName: l.business?.name || 'Property',
+        businessName: l.business?.name || 'My Property',
       }));
 
       setListings(mappedListings);
@@ -46,7 +47,7 @@ export default function ListingsPage() {
         }));
       }
     } catch (err) {
-      console.error('Error fetching listings:', err);
+      console.error('Error fetching host listings:', err);
     } finally {
       setLoading(false);
     }

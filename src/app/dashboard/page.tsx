@@ -53,6 +53,12 @@ export default function DashboardOverviewPage() {
   const confirmedBookings = bookings.filter((b) => b.status === 'CONFIRMED' || b.status === 'COMPLETED');
   const totalRevenue = confirmedBookings.reduce((acc, b) => acc + (b.totalPrice || 0), 0);
 
+  // Dynamic Occupancy Rate calculation based on active rooms and confirmed reservations
+  const totalListingsCount = businesses.reduce((sum, b) => sum + (b.listings?.length || 0), 0);
+  const occupancyRate = totalListingsCount > 0
+    ? Math.min(100, Math.round((confirmedBookings.length / totalListingsCount) * 100))
+    : (confirmedBookings.length > 0 ? 100 : 0);
+
   // Helper for 2-letter initials (e.g. James Smith -> JS)
   const getInitials = (name?: string) => {
     if (!name) return 'JT';
@@ -138,10 +144,10 @@ export default function DashboardOverviewPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">
-            Good evening, {user?.name?.split(' ')[0] || 'Nimal'}
+            Good evening, {user?.name?.split(' ')[0] || 'Host'}
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            {primaryBusiness?.name || 'Mirissa Beach Homestay'}
+            {primaryBusiness ? primaryBusiness.name : 'No Property Registered Yet'}
           </p>
         </div>
 
@@ -162,14 +168,14 @@ export default function DashboardOverviewPage() {
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] p-6 rounded-2xl">
           <p className="text-sm font-medium text-slate-400 mb-3">This month's revenue</p>
           <p className="text-4xl font-extrabold text-white">
-            ${totalRevenue > 0 ? totalRevenue.toLocaleString('en-US') : '1,280'}
+            ${totalRevenue.toLocaleString('en-US')}
           </p>
         </div>
 
         {/* Card 2: Occupancy rate */}
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] p-6 rounded-2xl">
           <p className="text-sm font-medium text-slate-400 mb-3">Occupancy rate</p>
-          <p className="text-4xl font-extrabold text-white">68%</p>
+          <p className="text-4xl font-extrabold text-white">{occupancyRate}%</p>
         </div>
 
         {/* Card 3: Pending requests */}
@@ -181,13 +187,18 @@ export default function DashboardOverviewPage() {
         </div>
       </div>
 
-      {/* Booking Requests Card */}
+      {/* Recent Reservations Card */}
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] p-6 rounded-2xl">
-        <h2 className="text-lg font-bold text-white mb-6">Booking requests</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-bold text-white">Recent Reservations</h2>
+          <span className="text-xs text-teal-400 font-semibold bg-teal-500/10 px-2.5 py-1 rounded-full border border-teal-500/20">
+            Instant Booking Active
+          </span>
+        </div>
 
         {bookings.length === 0 ? (
           <div className="text-center py-8 text-slate-400 text-sm">
-            No incoming guest requests at the moment.
+            No incoming guest reservations at the moment.
           </div>
         ) : (
           <div className="divide-y divide-[#262626]">
@@ -212,24 +223,7 @@ export default function DashboardOverviewPage() {
                   </div>
 
                   <div className="flex items-center space-x-3">
-                    {item.status === 'PENDING' ? (
-                      <>
-                        <button
-                          disabled={updatingId === item.id}
-                          onClick={() => handleStatusChange(item.id, 'DECLINED')}
-                          className="px-4 py-2 bg-transparent border border-red-900/60 hover:bg-red-950/40 text-red-400 text-xs font-semibold rounded-lg transition"
-                        >
-                          Decline
-                        </button>
-                        <button
-                          disabled={updatingId === item.id}
-                          onClick={() => handleStatusChange(item.id, 'CONFIRMED')}
-                          className="px-5 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold rounded-lg transition shadow-md shadow-blue-600/20"
-                        >
-                          Accept
-                        </button>
-                      </>
-                    ) : item.status === 'CONFIRMED' ? (
+                    {item.status === 'CONFIRMED' || item.status === 'PENDING' ? (
                       <div className="flex items-center space-x-2">
                         {isCheckInPassed && (
                           <button

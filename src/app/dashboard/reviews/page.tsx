@@ -24,9 +24,9 @@ interface SummaryStats {
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [stats, setStats] = useState<SummaryStats>({
-    averageRating: 4.7,
-    totalReviews: 32,
-    awaitingReply: 2,
+    averageRating: 0,
+    totalReviews: 0,
+    awaitingReply: 0,
   });
   const [loading, setLoading] = useState(true);
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
@@ -52,44 +52,17 @@ export default function ReviewsPage() {
           setStats(data.summary);
         }
       } else if (!isBackground) {
-        useMockData();
+        setReviews([]);
+        setStats({ averageRating: 0, totalReviews: 0, awaitingReply: 0 });
       }
     } catch (err) {
       if (!isBackground) {
-        console.warn('Using fallback mock reviews:', err);
-        useMockData();
+        setReviews([]);
+        setStats({ averageRating: 0, totalReviews: 0, awaitingReply: 0 });
       }
     } finally {
       if (!isBackground) setLoading(false);
     }
-  };
-
-  const useMockData = () => {
-    setStats({
-      averageRating: 4.7,
-      totalReviews: 32,
-      awaitingReply: 2,
-    });
-    setReviews([
-      {
-        id: 'demo-rev-1',
-        initials: 'LM',
-        authorName: 'Laura M.',
-        businessName: 'Mirissa Ocean Homestay',
-        rating: 5,
-        comment: 'Beautiful stay, walking distance to the beach, host was incredibly kind.',
-        reply: null,
-      },
-      {
-        id: 'demo-rev-2',
-        initials: 'JS',
-        authorName: 'James Smith',
-        businessName: 'Cinnamon Citadel Kandy',
-        rating: 4,
-        comment: 'Great location, room could use better AC but overall a solid stay.',
-        reply: "Thanks for staying with us! We've noted the AC feedback for our next maintenance check.",
-      },
-    ]);
   };
 
   const handlePostReply = async (reviewId: string) => {
@@ -169,7 +142,15 @@ export default function ReviewsPage() {
         </div>
 
         {/* Reviews List */}
-        <div className="space-y-8">
+        {reviews.length === 0 ? (
+          <div className="text-center py-12 text-slate-400">
+            <p className="text-base font-semibold text-slate-300">No reviews received yet</p>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              When international travelers leave feedback for your Sri Lanka properties, their ratings and reviews will appear here in real-time.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-8">
           {reviews.map((rev) => (
             <div key={rev.id} className="space-y-4">
               {/* Header Info */}
@@ -267,6 +248,7 @@ export default function ReviewsPage() {
             </div>
           ))}
         </div>
+        )}
       </div>
     </div>
   );

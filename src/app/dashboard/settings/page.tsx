@@ -38,7 +38,7 @@ export default function SettingsPage() {
     email: '',
     phone: '',
     avatarUrl: '',
-    bio: 'Independent Boutique Villa & Hotel Host in Southern Sri Lanka',
+    bio: '',
     role: 'OWNER',
   });
 
@@ -46,11 +46,11 @@ export default function SettingsPage() {
   const [payouts, setPayouts] = useState({
     currency: 'USD',
     payoutSchedule: 'WEEKLY',
-    bankName: 'Commercial Bank of Ceylon',
-    accountHolder: 'Nimasha Disanayaka',
-    accountNumber: '•••••••• 8821',
-    branchCode: 'Colombo Fort #001',
-    stripeConnected: true,
+    bankName: '',
+    accountHolder: '',
+    accountNumber: '',
+    branchCode: '',
+    stripeConnected: false,
   });
 
   // Notifications State
@@ -77,11 +77,14 @@ export default function SettingsPage() {
         const storedUser = JSON.parse(storedUserStr);
         setProfile((prev) => ({
           ...prev,
-          name: storedUser.name || 'Nimasha Disanayaka',
-          email: storedUser.email || 'nimuu1449disanayaka@gmail.com',
-          phone: storedUser.phone || '+94 77 123 4567',
+          name: storedUser.name || '',
+          email: storedUser.email || '',
+          phone: storedUser.phone || '',
           role: storedUser.role || 'OWNER',
         }));
+        if (storedUser.phone) {
+          setTestPhone(storedUser.phone);
+        }
       } catch (err) {
         console.error('Error parsing stored user:', err);
       }

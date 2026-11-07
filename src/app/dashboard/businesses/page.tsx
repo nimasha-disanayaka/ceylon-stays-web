@@ -224,7 +224,13 @@ export default function BusinessesPage() {
       await fetchBusinesses(false);
     } catch (err: any) {
       console.error('Add room error:', err);
-      setError(err.response?.data?.error || 'Failed to add room listing.');
+      const details = err.response?.data?.details;
+      const detailMsg = details
+        ? Object.entries(details)
+            .map(([field, msgs]: any) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+            .join(' | ')
+        : null;
+      setError(detailMsg || err.response?.data?.error || 'Failed to add room listing.');
     } finally {
       setSubmitting(false);
     }

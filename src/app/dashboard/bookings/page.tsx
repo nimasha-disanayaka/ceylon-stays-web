@@ -239,26 +239,7 @@ export default function BookingsPage() {
                       </td>
 
                       <td className="px-6 py-4 text-right space-x-2">
-                        {item.status === 'PENDING' && (
-                          <>
-                            <button
-                              disabled={updatingId === item.id}
-                              onClick={() => handleStatusChange(item.id, 'CONFIRMED')}
-                              className="px-3.5 py-1.5 bg-ceylon-gradient hover:opacity-95 text-white text-xs font-bold rounded-lg transition"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              disabled={updatingId === item.id}
-                              onClick={() => handleStatusChange(item.id, 'DECLINED')}
-                              className="px-3.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-bold rounded-lg transition"
-                            >
-                              Decline
-                            </button>
-                          </>
-                        )}
-
-                        {item.status === 'CONFIRMED' && (
+                        {(item.status === 'CONFIRMED' || item.status === 'PENDING') && (
                           <div className="inline-flex space-x-2">
                             {isCheckInPassed && (
                               <button
