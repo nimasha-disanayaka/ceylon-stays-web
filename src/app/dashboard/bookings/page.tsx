@@ -123,19 +123,25 @@ export default function BookingsPage() {
       if (paymentStatus === 'REFUNDED') {
         return (
           <span className="text-xs font-bold text-teal-400 bg-teal-950/40 px-2.5 py-1 rounded-md border border-teal-500/30">
-            Refunded 100% (${totalPrice.toFixed(2)})
+            Refund Completed 100% (${totalPrice.toFixed(2)})
           </span>
         );
       } else if (paymentStatus === 'PARTIAL_REFUND') {
         return (
-          <span className="text-xs font-bold text-amber-400 bg-amber-950/40 px-2.5 py-1 rounded-md border border-amber-500/30">
-            Refunded 50% (${(totalPrice * 0.5).toFixed(2)})
+          <span className="text-xs font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-500/30">
+            Refund Completed 50% (${(totalPrice * 0.5).toFixed(2)})
+          </span>
+        );
+      } else if (paymentStatus === 'PAID' || paymentStatus === 'CAPTURED') {
+        return (
+          <span className="text-xs font-bold text-amber-300 bg-amber-950/40 px-2.5 py-1 rounded-md border border-amber-500/30">
+            Cancelled • Refund Processing / Review
           </span>
         );
       } else {
         return (
-          <span className="text-xs font-bold text-rose-400 bg-rose-950/40 px-2.5 py-1 rounded-md border border-rose-500/30">
-            No Refund (Within 24h)
+          <span className="text-xs font-bold text-slate-400 bg-slate-800 px-2.5 py-1 rounded-md border border-slate-700">
+            Cancelled • Unpaid / No Charge
           </span>
         );
       }
